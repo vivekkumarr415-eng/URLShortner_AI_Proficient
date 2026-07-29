@@ -52,3 +52,15 @@ url-shortener/
 ## Current Scope
 
 The service modules provide dependency management, application entry points, configuration, OpenAPI metadata, validation infrastructure, consistent error handling, structured logging, and health monitoring. Implementing business endpoints and persistence behavior requires a later approved milestone.
+
+## Persistence Model
+
+This project currently uses independent in-memory H2 databases for the services that own data. The database model is intentionally limited to JPA entities, constraints, indexes, repository contracts, validated DTOs, and repository tests; no controllers or service-layer business behavior are included.
+
+| Service | Model | Persistence Responsibility |
+| --- | --- | --- |
+| `url-service` | `ShortUrl` | Stores original URL, generated short code, optional custom alias, creation and expiration times, active status, and click count. Unique constraints protect short codes and aliases. |
+| `analytics-service` | `ClickAnalytics` | Stores a click event with short code, click time, IP address, browser, device, operating system, and referrer. Query indexes support short-code and time-window lookups. |
+| `orchestrator-service` | `WorkflowExecution`, `ApprovalHistory`, `WorkflowState` | Stores workflow state and append-only approval decisions associated with an execution. `WorkflowState` is a persisted enum; approval records are indexed by workflow and decision time. |
+
+Repository tests use Spring Data JPA's H2 test support to verify persistence mappings and derived repository queries.
