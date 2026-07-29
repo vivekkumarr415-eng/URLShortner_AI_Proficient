@@ -7,6 +7,7 @@ public record ShortUrlResponse(
         String originalUrl,
         String shortCode,
         String customAlias,
+        String publicCode,
         Instant createdAt,
         Instant expiryDate,
         boolean active,

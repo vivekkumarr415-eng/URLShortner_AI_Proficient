@@ -2,7 +2,7 @@
 
 ## 1. Architecture Goals and Constraints
 
-The URL Shortener is a production-oriented, stateless Spring Boot service that prioritizes correct, low-latency redirect resolution. PostgreSQL is the authoritative source for link state. Redis accelerates read resolution but must never be the sole source of truth. Kafka carries asynchronous resolution events; neither Kafka publication nor consumption is on the critical redirect path.
+The URL Shortener is a production-oriented, stateless Spring Boot service that prioritizes correct, low-latency redirect resolution. PostgreSQL is the authoritative source for link state. Redis accelerates read resolution but must never be the sole source of truth. URL Service sends redirect analytics to Analytics Service through an asynchronous Spring Cloud OpenFeign call; analytics delivery is never on the redirect response path.
 
 The architecture implements the BRD and FRD requirements using Clean Architecture boundaries and domain-oriented language. It supports controlled engineering automation: every milestone is bounded, evidenced, and approved by a human before the next milestone begins.
 
@@ -58,10 +58,9 @@ flowchart LR
 
     A -->|Authoritative link state| PG[(PostgreSQL)]
     A -->|Resolution cache| R[(Redis)]
-    A -->|Resolution events| K[(Kafka)]
+    A -->|Redirect analytics, OpenFeign / HTTP| AS[Analytics Service]
     A -->|Authentication / identity validation| I[Identity Provider]
-    K --> C[Analytics Event Consumer]
-    C --> APG[(Analytics Storage — approval required)]
+    AS --> APG[(Analytics Storage)]
 ```
 
 ### 3.1 Component Responsibilities
@@ -73,8 +72,8 @@ flowchart LR
 | Domain model and policies | Enforce link lifecycle, eligibility, alias policy contracts, and ownership rules. | Has no framework, database, cache, or messaging dependency. |
 | Persistence adapter | Implements authoritative link and audit storage. | Depends on PostgreSQL integration only. |
 | Cache adapter | Reads and invalidates cache entries; never authorizes a stale or unverified state change. | Depends on Redis integration only. |
-| Messaging adapter | Publishes resolution events and provides reliable publication behavior. | Depends on Kafka integration only. |
-| Analytics consumer | Processes resolution events independently from redirects. | Does not participate in redirect response handling. |
+| Analytics HTTP adapter | Sends redirect events through a bounded OpenFeign client with timeout, retry, circuit breaker, and fallback behavior. | Depends on the Analytics Service HTTP contract only. |
+| Analytics service | Persists redirect analytics and provides reporting queries. | Does not participate in redirect response handling. |
 | Observability adapter | Supplies structured logs, metrics, tracing context, and health contributions. | Cross-cutting; must not expose secrets or unnecessary personal data. |
 
 ## 4. Redirect Resolution Sequence
@@ -87,7 +86,7 @@ sequenceDiagram
     participant UseCase as Resolve Link Use Case
     participant Redis
     participant PostgreSQL
-    participant Kafka
+    participant Analytics as Analytics Service
 
     Visitor->>API: GET /{shortCode}
     API->>UseCase: resolve(shortCode)
@@ -104,8 +103,8 @@ sequenceDiagram
     alt Link is active and unexpired
         UseCase-->>API: Destination URL
         API-->>Visitor: Approved redirect response
-        UseCase-)Kafka: Publish resolution event asynchronously
-        Note over UseCase,Kafka: Publication failure is observed; redirect is unaffected.
+        API-)Analytics: POST /analytics/events via OpenFeign
+        Note over API,Analytics: Delivery uses a 500ms connect timeout, 1000ms read timeout, bounded retry, and fallback. Redirect is unaffected.
     else Link missing, disabled, or expired
         UseCase-->>API: Non-resolution result
         API-->>Visitor: Documented non-resolution response
@@ -218,22 +217,11 @@ Redis is a disposable performance layer for redirect resolution.
 | Negative caching | Missing-link caching may be introduced only after abuse, privacy, and invalidation review; it is not assumed by this architecture. |
 | Failure mode | Redis failure degrades performance, not redirect correctness or availability when PostgreSQL is available. |
 
-## 8. Kafka Design
+## 8. URL-to-Analytics Service Communication
 
-Kafka carries asynchronous resolution events and isolates analytics from redirect latency.
+After URL Service has made a successful redirect decision, its asynchronous `AnalyticsEventPublisher` calls Analytics Service's `POST /analytics/events` endpoint through `AnalyticsServiceClient`, a Spring Cloud OpenFeign client. The event carries the short code, decision timestamp, IP address, browser, device, operating system, and referrer.
 
-| Topic | Producer | Consumer | Key | Delivery Design |
-| --- | --- | --- | --- |
-| `url-shortener.link-resolution.v1` | Resolution outbox publisher | Analytics consumer group | Link identifier | At-least-once delivery with consumer idempotency. |
-| `url-shortener.link-resolution-dlq.v1` | Analytics consumer | Operations investigation and replay process | Original event identifier | Used after approved retry exhaustion. |
-
-### 8.1 Event Contract
-
-A resolution event includes a stable event identifier, schema version, link identifier, short-code reference where approved, and resolution-decision timestamp. Visitor-identifying fields are excluded unless privacy policy explicitly approves each field.
-
-### 8.2 Transactional Outbox Pattern
-
-The resolution decision and outbox insertion occur in PostgreSQL. A background publisher reads pending outbox records, publishes to Kafka, and marks records published only after broker acknowledgement. This avoids claiming an event was emitted when the database transaction was not committed and avoids coupling the redirect response to Kafka availability.
+The client uses a 500ms connect timeout and 1000ms read timeout. Transport failures are retried up to three attempts with bounded backoff (100ms initial, 500ms maximum). HTTP error responses are decoded into `AnalyticsServiceException`; the enabled circuit breaker routes exhausted or unavailable calls to a fallback that logs the delivery failure and returns normally. This makes analytics delivery best-effort: a URL redirect is returned even when Analytics Service is slow or unavailable.
 
 ## 9. Deployment Architecture
 
@@ -248,14 +236,12 @@ flowchart TB
     subgraph Runtime[Approved Container Runtime]
         A1[URL Shortener Instance]
         A2[URL Shortener Instance]
-        C1[Analytics Consumer Instance]
-        P1[Outbox Publisher Instance]
+        AN1[Analytics Service Instance]
     end
 
     subgraph Data[Managed or Approved Data Services]
         PG[(PostgreSQL)]
         R[(Redis)]
-        K[(Kafka)]
     end
 
     Prom[Prometheus]
@@ -268,17 +254,13 @@ flowchart TB
     A2 --> PG
     A1 --> R
     A2 --> R
-    A1 --> K
-    A2 --> K
-    P1 --> PG
-    P1 --> K
-    C1 --> K
+    A1 -->|OpenFeign / HTTP| AN1
+    A2 -->|OpenFeign / HTTP| AN1
     A1 --> IdP
     A2 --> IdP
     Prom --> A1
     Prom --> A2
-    Prom --> C1
-    Prom --> P1
+    Prom --> AN1
 ```
 
 ### 9.1 Deployment Requirements

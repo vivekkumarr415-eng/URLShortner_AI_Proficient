@@ -86,6 +86,17 @@ public class ShortUrl {
         }
     }
 
+    public void update(String originalUrl, String customAlias, Instant expiryDate, boolean active) {
+        this.originalUrl = originalUrl;
+        this.customAlias = customAlias;
+        this.expiryDate = expiryDate;
+        this.active = active;
+    }
+
+    public void registerClick() {
+        clickCount++;
+    }
+
     public Long getId() {
         return id;
     }

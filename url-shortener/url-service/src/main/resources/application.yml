@@ -13,6 +13,19 @@ spring:
   mvc:
     problemdetails:
       enabled: false
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+      client:
+        config:
+          analytics-service:
+            connectTimeout: 500
+            readTimeout: 1000
+            loggerLevel: basic
+
+analytics-service:
+  base-url: http://localhost:8082
 
 server:
   port: 8081
