@@ -31,6 +31,12 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred", request);
     }
 
+    @ExceptionHandler({WorkflowNotFoundException.class, InvalidWorkflowStateException.class})
+    ResponseEntity<ApiError> handleWorkflowException(RuntimeException exception, HttpServletRequest request) {
+        HttpStatus status = exception instanceof WorkflowNotFoundException ? HttpStatus.NOT_FOUND : HttpStatus.CONFLICT;
+        return buildResponse(status, exception.getMessage(), request);
+    }
+
     private ResponseEntity<ApiError> buildResponse(HttpStatus status, String message, HttpServletRequest request) {
         ApiError error = new ApiError(Instant.now(), status.value(), status.getReasonPhrase(), message, request.getRequestURI());
         return ResponseEntity.status(status).body(error);

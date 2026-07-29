@@ -8,5 +8,7 @@ public enum WorkflowState {
     REJECTED,
     COMPLETED,
     FAILED,
-    CANCELLED
+    CANCELLED,
+    ROLLING_BACK,
+    SAFE_STOPPED
 }

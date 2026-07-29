@@ -1,0 +1,1 @@
+package com.example.urlshortener.dto; import jakarta.validation.constraints.NotBlank; import jakarta.validation.constraints.Size; import java.util.Map; public record WorkflowStartRequest(@NotBlank @Size(max=120) String workflowName, Map<String,String> context) { }

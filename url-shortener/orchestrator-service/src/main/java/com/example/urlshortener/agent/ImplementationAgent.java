@@ -1,0 +1,1 @@
+package com.example.urlshortener.agent; import com.example.urlshortener.entity.AgentType; import org.springframework.stereotype.Component; @Component public class ImplementationAgent extends StageAgent { public ImplementationAgent() { super(AgentType.IMPLEMENTATION); } }

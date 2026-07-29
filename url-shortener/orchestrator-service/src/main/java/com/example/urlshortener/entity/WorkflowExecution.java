@@ -45,6 +45,20 @@ public class WorkflowExecution {
     private WorkflowState workflowState;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "current_stage", nullable = false, length = 32)
+    private WorkflowStage currentStage;
+
+    @Column(name = "plan_revision", nullable = false)
+    private int planRevision;
+
+    @Column(name = "retry_count", nullable = false)
+    private int retryCount;
+
+    @Column(name = "approval_round", nullable = false)
+    private int approvalRound;
+
+    @NotNull
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -61,6 +75,8 @@ public class WorkflowExecution {
     public WorkflowExecution(String workflowName, WorkflowState workflowState) {
         this.workflowName = workflowName;
         this.workflowState = workflowState;
+        this.currentStage = WorkflowStage.REQUIREMENTS;
+        this.planRevision = 1;
     }
 
     @PrePersist
@@ -88,6 +104,20 @@ public class WorkflowExecution {
     public WorkflowState getWorkflowState() {
         return workflowState;
     }
+
+    public WorkflowStage getCurrentStage() { return currentStage; }
+    public int getPlanRevision() { return planRevision; }
+    public int getRetryCount() { return retryCount; }
+    public int getApprovalRound() { return approvalRound; }
+
+    public void transitionTo(WorkflowState state, WorkflowStage stage) {
+        this.workflowState = state;
+        this.currentStage = stage;
+    }
+
+    public void incrementRetryCount() { retryCount++; }
+    public void replan() { planRevision++; approvalRound = 0; currentStage = WorkflowStage.PLANNING; workflowState = WorkflowState.RUNNING; }
+    public void advanceApprovalRound() { approvalRound++; }
 
     public Instant getCreatedAt() {
         return createdAt;
