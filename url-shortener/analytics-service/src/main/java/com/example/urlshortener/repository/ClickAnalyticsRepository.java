@@ -9,4 +9,8 @@ import java.util.List;
 public interface ClickAnalyticsRepository extends JpaRepository<ClickAnalytics, Long> {
 
     List<ClickAnalytics> findByShortCodeAndClickedAtBetweenOrderByClickedAtAsc(String shortCode, Instant from, Instant to);
+
+    List<ClickAnalytics> findByShortCodeOrderByClickedAtAsc(String shortCode);
+
+    List<ClickAnalytics> findByClickedAtGreaterThanEqualAndClickedAtLessThanOrderByClickedAtAsc(Instant from, Instant to);
 }
