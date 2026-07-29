@@ -1,66 +1,51 @@
-# URL Shortener Agentic Engineering System
+# URL Shortener Platform
 
-This repository is a Maven multi-module bootstrap for a URL Shortener platform. Each module is an independently runnable Spring Boot 3 application using Java 17. This commit establishes only the service foundations; it intentionally contains no URL-shortening, analytics, orchestration, or gateway business logic.
+A Java 17 / Spring Boot microservice platform for short-link management, redirect analytics, and approval-governed engineering workflows.
 
 ## Services
 
-| Service | Default port | Responsibility |
+| Service | Port | Responsibility |
 | --- | ---: | --- |
-| `api-gateway` | 8080 | Edge-facing application boundary for future request routing, cross-cutting API policy, and gateway observability. |
-| `url-service` | 8081 | Authoritative future home for short-link creation, resolution, lifecycle, and H2-backed link data. |
-| `analytics-service` | 8082 | Future home for asynchronous resolution-analytics ingestion and query capabilities. |
-| `orchestrator-service` | 8083 | Future home for governed Agentic SDLC orchestration, approval state, and audit records. |
+| API Gateway | 8080 | Edge-service foundation. |
+| URL Service | 8081 | Creates, manages, and resolves short URLs. |
+| Analytics Service | 8082 | Stores redirect events and exposes aggregate reporting. |
+| Orchestrator Service | 8083 | Runs auditable, approval-gated SDLC workflows. |
 
-## Prerequisites
+URL Service publishes a best-effort analytics event after a successful redirect through Spring Cloud OpenFeign. The client uses a 500 ms connect timeout, 1 s read timeout, bounded retry, circuit breaker, and fallback; a delivery failure never changes the redirect response.
 
-- Java 17
-- Maven 3.9 or later
+## Quick Start
 
-## Build and Test
-
-Run the reactor build from this directory:
+Prerequisites: Java 17 and Maven 3.9+.
 
 ```bash
+cd url-shortener
 mvn clean verify
-```
-
-Run an individual service, for example:
-
-```bash
 mvn -pl url-service spring-boot:run
 ```
 
-Each service exposes Spring Boot Actuator health at `/actuator/health` and Swagger UI at `/swagger-ui/index.html` when running. H2 consoles are deliberately disabled; database access will be defined in the data-design and implementation milestones.
+Run additional services in separate terminals by replacing `url-service` with `analytics-service` or `orchestrator-service`. Health is available at `/actuator/health`; Swagger UI is available at `/swagger-ui.html`.
 
 ## Documentation
 
-Completed requirements, architecture, and orchestration documentation is in [`docs/`](docs/).
+- [API documentation](docs/API-Documentation.md)
+- [Setup guide](docs/Setup-Guide.md)
+- [Testing guide](docs/Testing-Guide.md)
+- [Production-readiness review](docs/Production-Readiness-Review.md)
+- [Architecture](docs/Architecture.md)
+- [Agent orchestration design](docs/Agent-Orchestration.md)
 
-## Repository Layout
+## Repository Structure
 
 ```text
 url-shortener/
-├── api-gateway/
-├── url-service/
-├── analytics-service/
-├── orchestrator-service/
-├── docs/
-├── pom.xml
-└── README.md
+├── api-gateway/             # Gateway foundation
+├── url-service/             # Short URL management and redirect service
+├── analytics-service/       # Event ingestion and reporting
+├── orchestrator-service/    # Agentic SDLC workflow engine
+├── docs/                    # Product, architecture, API, and readiness docs
+└── pom.xml                  # Maven reactor and dependency management
 ```
 
-## Current Scope
+## Production Status
 
-The service modules provide dependency management, application entry points, configuration, OpenAPI metadata, validation infrastructure, consistent error handling, structured logging, and health monitoring. Implementing business endpoints and persistence behavior requires a later approved milestone.
-
-## Persistence Model
-
-This project currently uses independent in-memory H2 databases for the services that own data. The database model is intentionally limited to JPA entities, constraints, indexes, repository contracts, validated DTOs, and repository tests; no controllers or service-layer business behavior are included.
-
-| Service | Model | Persistence Responsibility |
-| --- | --- | --- |
-| `url-service` | `ShortUrl` | Stores original URL, generated short code, optional custom alias, creation and expiration times, active status, and click count. Unique constraints protect short codes and aliases. |
-| `analytics-service` | `ClickAnalytics` | Stores a click event with short code, click time, IP address, browser, device, operating system, and referrer. Query indexes support short-code and time-window lookups. |
-| `orchestrator-service` | `WorkflowExecution`, `ApprovalHistory`, `WorkflowState` | Stores workflow state and append-only approval decisions associated with an execution. `WorkflowState` is a persisted enum; approval records are indexed by workflow and decision time. |
-
-Repository tests use Spring Data JPA's H2 test support to verify persistence mappings and derived repository queries.
+This repository is a production-oriented engineering baseline, not a production deployment. It uses independent in-memory H2 stores, has no authentication/authorization enforcement, and requires external database, secret-management, observability, security, and load-validation work before release. See the [production-readiness review](docs/Production-Readiness-Review.md) for the explicit risk register and release gates.
