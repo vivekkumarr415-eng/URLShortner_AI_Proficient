@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ShortUrlService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">URL Service</a> &gt; <a href="index.source.html" class="el_package">com.example.urlshortener.service</a> &gt; <span class="el_source">ShortUrlService.java</span></div><h1>ShortUrlService.java</h1><pre class="source lang-java linenums">package com.example.urlshortener.service;
+
+import com.example.urlshortener.dto.ShortUrlCreateRequest;
+import com.example.urlshortener.dto.ShortUrlResponse;
+import com.example.urlshortener.dto.ShortUrlUpdateRequest;
+import com.example.urlshortener.entity.ShortUrl;
+import com.example.urlshortener.exception.DuplicateAliasException;
+import com.example.urlshortener.exception.ShortUrlExpiredException;
+import com.example.urlshortener.exception.ShortUrlInactiveException;
+import com.example.urlshortener.exception.ShortUrlNotFoundException;
+import com.example.urlshortener.mapper.ShortUrlMapper;
+import com.example.urlshortener.repository.ShortUrlRepository;
+import com.example.urlshortener.util.ShortCodeGenerator;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Clock;
+import java.time.Instant;
+
+@Service
+@Transactional(readOnly = true)
+public class ShortUrlService {
+
+    private static final int MAX_CODE_GENERATION_ATTEMPTS = 10;
+
+    private final ShortUrlRepository shortUrlRepository;
+    private final ShortUrlMapper shortUrlMapper;
+    private final ShortCodeGenerator shortCodeGenerator;
+    private final Clock clock;
+
+    public ShortUrlService(ShortUrlRepository shortUrlRepository, ShortUrlMapper shortUrlMapper,
+<span class="fc" id="L32">                           ShortCodeGenerator shortCodeGenerator, Clock clock) {</span>
+<span class="fc" id="L33">        this.shortUrlRepository = shortUrlRepository;</span>
+<span class="fc" id="L34">        this.shortUrlMapper = shortUrlMapper;</span>
+<span class="fc" id="L35">        this.shortCodeGenerator = shortCodeGenerator;</span>
+<span class="fc" id="L36">        this.clock = clock;</span>
+<span class="fc" id="L37">    }</span>
+
+    @Transactional
+    public ShortUrlResponse create(ShortUrlCreateRequest request) {
+<span class="fc" id="L41">        String customAlias = request.customAlias();</span>
+<span class="pc bpc" id="L42" title="1 of 4 branches missed.">        if (customAlias != null &amp;&amp; isCodeInUse(customAlias)) {</span>
+<span class="fc" id="L43">            throw new DuplicateAliasException(customAlias);</span>
+        }
+
+<span class="fc" id="L46">        ShortUrl shortUrl = new ShortUrl(</span>
+<span class="fc" id="L47">                request.originalUrl(),</span>
+<span class="fc" id="L48">                generateAvailableShortCode(),</span>
+                customAlias,
+<span class="fc" id="L50">                request.expiryDate(),</span>
+                true,
+                0
+        );
+<span class="fc" id="L54">        return shortUrlMapper.toResponse(shortUrlRepository.save(shortUrl));</span>
+    }
+
+    public ShortUrlResponse getByCode(String shortCode) {
+<span class="nc" id="L58">        return shortUrlMapper.toResponse(findByCode(shortCode));</span>
+    }
+
+    @Transactional
+    public ShortUrlResponse update(Long id, ShortUrlUpdateRequest request) {
+<span class="fc" id="L63">        ShortUrl shortUrl = findById(id);</span>
+<span class="fc" id="L64">        String customAlias = request.customAlias();</span>
+<span class="pc bpc" id="L65" title="3 of 4 branches missed.">        if (customAlias != null &amp;&amp; isAliasUsedByAnotherShortUrl(customAlias, id)) {</span>
+<span class="nc" id="L66">            throw new DuplicateAliasException(customAlias);</span>
+        }
+
+<span class="fc" id="L69">        shortUrl.update(request.originalUrl(), customAlias, request.expiryDate(), request.active());</span>
+<span class="fc" id="L70">        return shortUrlMapper.toResponse(shortUrlRepository.save(shortUrl));</span>
+    }
+
+    @Transactional
+    public void delete(Long id) {
+<span class="nc" id="L75">        shortUrlRepository.delete(findById(id));</span>
+<span class="nc" id="L76">    }</span>
+
+    @Transactional
+    public String resolveDestination(String shortCode) {
+<span class="fc" id="L80">        ShortUrl shortUrl = findByCode(shortCode);</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (!shortUrl.isActive()) {</span>
+<span class="fc" id="L82">            throw new ShortUrlInactiveException(shortCode);</span>
+        }
+<span class="pc bpc" id="L84" title="2 of 4 branches missed.">        if (shortUrl.getExpiryDate() != null &amp;&amp; !shortUrl.getExpiryDate().isAfter(Instant.now(clock))) {</span>
+<span class="fc" id="L85">            throw new ShortUrlExpiredException(shortCode);</span>
+        }
+
+<span class="nc" id="L88">        shortUrl.registerClick();</span>
+<span class="nc" id="L89">        return shortUrl.getOriginalUrl();</span>
+    }
+
+    private ShortUrl findById(Long id) {
+<span class="fc" id="L93">        return shortUrlRepository.findById(id)</span>
+<span class="pc" id="L94">                .orElseThrow(() -&gt; new ShortUrlNotFoundException(id.toString()));</span>
+    }
+
+    private ShortUrl findByCode(String shortCode) {
+<span class="fc" id="L98">        return shortUrlRepository.findByShortCodeOrCustomAlias(shortCode, shortCode)</span>
+<span class="pc" id="L99">                .orElseThrow(() -&gt; new ShortUrlNotFoundException(shortCode));</span>
+    }
+
+    private boolean isAliasUsedByAnotherShortUrl(String alias, Long id) {
+<span class="nc" id="L103">        return shortUrlRepository.findByShortCodeOrCustomAlias(alias, alias)</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">                .filter(existing -&gt; !existing.getId().equals(id))</span>
+<span class="nc" id="L105">                .isPresent();</span>
+    }
+
+    private boolean isCodeInUse(String code) {
+<span class="fc" id="L109">        return shortUrlRepository.existsByShortCodeOrCustomAlias(code, code);</span>
+    }
+
+    private String generateAvailableShortCode() {
+<span class="pc bpc" id="L113" title="1 of 2 branches missed.">        for (int attempt = 0; attempt &lt; MAX_CODE_GENERATION_ATTEMPTS; attempt++) {</span>
+<span class="fc" id="L114">            String candidate = shortCodeGenerator.generate();</span>
+<span class="pc bpc" id="L115" title="1 of 2 branches missed.">            if (!isCodeInUse(candidate)) {</span>
+<span class="fc" id="L116">                return candidate;</span>
+            }
+        }
+<span class="nc" id="L119">        throw new IllegalStateException(&quot;Unable to allocate a unique short code&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

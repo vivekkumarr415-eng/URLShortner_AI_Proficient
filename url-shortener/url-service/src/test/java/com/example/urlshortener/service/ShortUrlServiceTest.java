@@ -56,6 +56,7 @@ class ShortUrlServiceTest {
                 "products",
                 NOW.plusSeconds(3_600)
         );
+        when(shortUrlRepository.existsByShortCodeOrCustomAlias("products", "products")).thenReturn(false);
         when(shortUrlRepository.existsByShortCodeOrCustomAlias("a1B2c3D4", "a1B2c3D4")).thenReturn(false);
         when(shortCodeGenerator.generate()).thenReturn("a1B2c3D4");
         when(shortUrlRepository.save(any(ShortUrl.class))).thenAnswer(invocation -> invocation.getArgument(0));

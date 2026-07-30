@@ -92,7 +92,9 @@ mvn clean compile -DskipTests
 
 ## Coverage
 
-No coverage threshold is currently enforced. To add coverage reporting:
+JaCoCo is configured in the Maven reactor. Run `mvn verify` to generate each module's HTML and XML report under `target/site/jacoco/`. The project quality target is 70% line coverage for changed business logic; enforce that threshold in CI after the baseline report is reviewed.
+
+To make the threshold a hard Maven gate, add the following check execution to the existing JaCoCo configuration:
 
 1. Add JaCoCo plugin to the parent POM:
 
@@ -121,7 +123,7 @@ No coverage threshold is currently enforced. To add coverage reporting:
                             <limit>
                                 <counter>LINE</counter>
                                 <value>COVEREDRATIO</value>
-                                <minimum>0.80</minimum>
+                                <minimum>0.70</minimum>
                             </limit>
                         </limits>
                     </rule>

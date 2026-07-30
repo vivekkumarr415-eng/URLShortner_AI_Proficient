@@ -1,0 +1,28 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+URL Service,com.example.urlshortener.service,AnalyticsEventPublisher,0,11,0,0,0,5,0,2,0,2
+URL Service,com.example.urlshortener.service,ShortUrlService,66,146,10,10,10,33,14,10,6,8
+URL Service,com.example.urlshortener.exception,DuplicateAliasException,0,5,0,0,0,2,0,1,0,1
+URL Service,com.example.urlshortener.exception,GlobalExceptionHandler,91,7,0,0,15,2,9,2,9,2
+URL Service,com.example.urlshortener.exception,ShortUrlInactiveException,0,5,0,0,0,2,0,1,0,1
+URL Service,com.example.urlshortener.exception,ShortUrlNotFoundException,5,0,0,0,2,0,1,0,1,0
+URL Service,com.example.urlshortener.exception,ShortUrlExpiredException,0,5,0,0,0,2,0,1,0,1
+URL Service,com.example.urlshortener.exception,ApiError,18,0,0,0,1,0,1,0,1,0
+URL Service,com.example.urlshortener.util,ShortCodeGenerator,25,12,2,0,4,3,2,2,1,2
+URL Service,com.example.urlshortener.dto,ClickAnalyticsCreateRequest,0,24,0,0,0,1,0,1,0,1
+URL Service,com.example.urlshortener.dto,ShortUrlUpdateRequest,0,15,0,0,0,1,0,1,0,1
+URL Service,com.example.urlshortener.dto,ShortUrlCreateRequest,0,12,0,0,0,1,0,1,0,1
+URL Service,com.example.urlshortener.dto,ShortUrlResponse,0,30,0,0,0,1,0,1,0,1
+URL Service,com.example.urlshortener,UrlServiceApplication,5,3,0,0,2,1,1,1,1,1
+URL Service,com.example.urlshortener.mapper,ShortUrlMapper,0,33,0,2,0,11,0,3,0,2
+URL Service,com.example.urlshortener.client,AnalyticsServiceClientFallbackFactory.new AnalyticsServiceClient() {...},0,17,0,0,0,3,0,2,0,2
+URL Service,com.example.urlshortener.client,AnalyticsServiceException,10,0,0,0,4,0,2,0,2,0
+URL Service,com.example.urlshortener.client,AnalyticsServiceClientFallbackFactory,0,13,0,0,0,3,0,3,0,3
+URL Service,com.example.urlshortener.controller,RedirectController,87,69,31,3,15,14,17,5,0,5
+URL Service,com.example.urlshortener.controller,ShortUrlController,42,6,0,0,10,3,4,1,4,1
+URL Service,com.example.urlshortener.config,OpenApiConfiguration,0,17,0,0,0,5,0,2,0,2
+URL Service,com.example.urlshortener.config,ValidationConfiguration,0,9,0,0,0,3,0,3,0,3
+URL Service,com.example.urlshortener.config,AnalyticsFeignConfiguration,10,12,0,0,1,3,1,3,1,3
+URL Service,com.example.urlshortener.config,ApiKeyAuthenticationFilter,2,45,2,4,0,12,2,4,0,3
+URL Service,com.example.urlshortener.config,RateLimitFilter,1,94,3,7,0,19,3,7,0,5
+URL Service,com.example.urlshortener.config,RateLimitFilter.Window,0,19,0,0,0,2,0,2,0,2
+URL Service,com.example.urlshortener.entity,ShortUrl,7,68,1,1,2,26,2,12,1,12

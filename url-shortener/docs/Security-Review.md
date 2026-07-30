@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary
 
-The platform implements baseline input validation and non-sensitive error handling but lacks the security controls required for production deployment. **No authentication, authorization, rate limiting, TLS termination, secret management, or dependency scanning is in place.** The current state is suitable for local development and controlled demonstration only.
+The platform implements baseline input validation, safe error handling, API-key protection for link-management endpoints, and configurable per-instance rate limiting. It still lacks the stronger controls required for production deployment: user authentication/authorization, TLS termination, managed secret integration, and dependency scanning. The current state is suitable for local development and controlled demonstration only.
 
 ## 2. Current Security Controls
 

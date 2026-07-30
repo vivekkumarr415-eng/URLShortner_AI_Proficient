@@ -30,6 +30,13 @@ analytics-service:
 server:
   port: 8081
   shutdown: graceful
+  max-http-request-header-size: 16KB
+
+security:
+  # Set URL_SERVICE_API_KEY in every non-local environment; never commit its value.
+  api-key: ${URL_SERVICE_API_KEY:}
+  rate-limit:
+    requests-per-minute: ${URL_SERVICE_RATE_LIMIT:120}
 
 management:
   endpoints:
