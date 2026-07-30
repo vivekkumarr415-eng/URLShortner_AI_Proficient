@@ -1,6 +1,6 @@
 # URL Shortener Platform
 
-A Java 17 / Spring Boot microservice platform for short-link management, redirect analytics, and approval-governed engineering workflows.
+A Java 17 / Spring Boot 3.3 microservice platform for short-link management, redirect analytics, and approval-governed engineering workflows.
 
 ## Services
 
@@ -27,12 +27,21 @@ Run additional services in separate terminals by replacing `url-service` with `a
 
 ## Documentation
 
-- [API documentation](docs/API-Documentation.md)
-- [Setup guide](docs/Setup-Guide.md)
-- [Testing guide](docs/Testing-Guide.md)
-- [Production-readiness review](docs/Production-Readiness-Review.md)
-- [Architecture](docs/Architecture.md)
-- [Agent orchestration design](docs/Agent-Orchestration.md)
+| Document | Description |
+| --- | --- |
+| [API documentation](docs/API-Documentation.md) | REST endpoints, schemas, and error contracts. |
+| [Architecture](docs/Architecture.md) | System context, component design, and data models. |
+| [Setup guide](docs/Setup-Guide.md) | Local development and configuration. |
+| [Testing guide](docs/Testing-Guide.md) | Test strategy and execution. |
+| [Production-readiness review](docs/Production-Readiness-Review.md) | Engineering review and release gates. |
+| [Trade-offs](docs/Trade-offs.md) | Architectural trade-off analysis. |
+| [Risk analysis](docs/Risk-Analysis.md) | Risk register with mitigations. |
+| [Security review](docs/Security-Review.md) | Security controls and gaps. |
+| [Limitations](docs/Limitations.md) | Known limitations. |
+| [Engineering summary](docs/Engineering-Summary.md) | Final engineering summary. |
+| [Agent orchestration design](docs/Agent-Orchestration.md) | Agentic SDLC orchestrator. |
+| [BRD](docs/BRD.md) | Business Requirements Document. |
+| [FRD](docs/FRD.md) | Functional Requirements Document. |
 
 ## Repository Structure
 
